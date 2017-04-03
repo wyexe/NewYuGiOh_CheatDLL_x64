@@ -15,12 +15,11 @@ CCard::CCard(_In_ DWORD64 dwCardId) : m_dwCardID(dwCardId), m_emCardAttribute(em
 		SetCardName();
 		SetCardDetail();
 	}
-	MsgBoxLog(L"ID=%X, Text=%s, Name=%s, Attribute=%X", m_dwCardID, GetCardAttributeText().c_str(), m_wsCardName.c_str(), (DWORD)m_emCardAttribute);
 }
 
 DWORD64 CCard::GetCardID() CONST
 {
-	return static_cast<DWORD64>(m_dwCardID & 0xFFFF);
+	return m_dwCardID & 0xFFFF;
 }
 
 CONST std::wstring& CCard::GetCardDetail() CONST

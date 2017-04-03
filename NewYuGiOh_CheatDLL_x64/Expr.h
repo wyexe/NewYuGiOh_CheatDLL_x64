@@ -2,50 +2,30 @@
 #define __NEWYUGIOH_CHEATDLL_X64_EXPR_EXPR_H__
 
 #include <vector>
-#include "FormLog.h"
+#include <MyTools/CLExpression.h>
+#include <MyTools/ClassInstance.h>
 
-typedef std::vector<std::wstring> ExprParamecter;
-struct ExprMethodPtr
-{
-	std::function<VOID(CONST ExprParamecter&)> MethodPtr;
-	std::wstring CmdText;
-};
-
-class CExpr
+class CExpr : public CExprFunBase, virtual public CClassInstance<CExpr>
 {
 public:
 	CExpr();
-	~CExpr() = default;
+	virtual ~CExpr();
 public:
-	struct ExprThreadContent
-	{
-		std::wstring CmdText;
-		CONST ExprMethodPtr* pExprMethodPtr;
-	};
-public:
-	static CExpr& GetInstance();
+	virtual VOID Release();
 
-	static BOOL GetExprParmeter(_In_ CONST std::wstring& CmdText, _Out_ ExprParamecter& ExprParamecter_);
-public:
-	BOOL Run(_In_ CONST std::wstring& CmdText) CONST;
+	virtual std::vector<ExpressionFunPtr>& GetVec();
+
 private:
+	virtual VOID Help(_In_ CONST std::vector<std::wstring>&);
+
 	// 
-	VOID FindCard(_In_ CONST ExprParamecter& Paramecter) CONST;
+	VOID FindCard(_In_ CONST std::vector<std::wstring>&);
 
 	// Set Next Card
-	VOID SetNextCard(_In_ CONST ExprParamecter& Paramecter) CONST;
-	
+	VOID SetDeskCard(_In_ CONST std::vector<std::wstring>&);
+
 	// Set 5 Card when Start Game
-	VOID SetHookInitialCard(_In_ CONST ExprParamecter& Paramecter) CONST;
-
-private:
-	static std::wstring GetCmd(_In_ CONST std::wstring& CmdText);
-
-	static DWORD WINAPI _WorkThread(LPVOID lpParm);
-
-	static std::wstring MakeTextToUpper(_In_ CONST std::wstring& Text);
-private:
-	std::vector<ExprMethodPtr> VecExprMethodPtr;
+	VOID SetInitialCard(_In_ CONST std::vector<std::wstring>&);
 };
 
 

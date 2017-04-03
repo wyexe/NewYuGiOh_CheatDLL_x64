@@ -1,188 +1,134 @@
 #include "stdafx.h"
 #include "Expr.h"
-#include <algorithm>
-#include <thread>
-#include <sstream>
+#include <MyTools/Log.h>
+#include <MyTools/Character.h>
 #include "CardExtend.h"
 
+#define _SELF L"Expr.cpp"
 CExpr::CExpr()
 {
-	std::vector<ExprMethodPtr> Vec =
+	
+}
+
+
+CExpr::~CExpr()
+{
+
+}
+
+VOID CExpr::Release()
+{
+
+}
+
+std::vector<ExpressionFunPtr>& CExpr::GetVec()
+{
+	static std::vector<ExpressionFunPtr> Vec = 
 	{
-		{ std::bind(&CExpr::FindCard,this, std::placeholders::_1),				L"FindCard" },
-		{ std::bind(&CExpr::SetNextCard,this, std::placeholders::_1),			L"SetNextCard" },
-		{ std::bind(&CExpr::SetHookInitialCard,this, std::placeholders::_1),	L"SetHookInitialCard" },
+		{ std::bind(&CExpr::Help, this, std::placeholders::_1), L"Help" },
+		{ std::bind(&CExpr::FindCard, this, std::placeholders::_1), L"FindCard" },
+		{ std::bind(&CExpr::SetDeskCard, this, std::placeholders::_1), L"SetDeskCard" },
+		{ std::bind(&CExpr::SetInitialCard, this, std::placeholders::_1), L"SetInitialCard" },
 	};
-	VecExprMethodPtr = std::move(Vec);
+	return Vec;
 }
 
-CExpr& CExpr::GetInstance()
+VOID CExpr::Help(_In_ CONST std::vector<std::wstring>&)
 {
-	static CExpr Expr;
-	return Expr;
+	auto& Vec = GetVec();
+	for (CONST auto& itm : Vec)
+		LOG_C(CLog::em_Log_Type::em_Log_Type_Custome, L"FunctionName=%s", itm.wsFunName.c_str());
 }
 
-DWORD WINAPI CExpr::_WorkThread(LPVOID lpParm)
+VOID CExpr::FindCard(_In_ CONST std::vector<std::wstring>& VecParm)
 {
-	auto pExprThreadContent = reinterpret_cast<ExprThreadContent*>(lpParm);
-
-	ExprParamecter ExprParamecter_;
-	if (!CExpr::GetExprParmeter(pExprThreadContent->CmdText, ExprParamecter_))
+	if (VecParm.size() == 0)
 	{
-		CFormLog::GetInstance().Print(L"Decompose Text Faild!");
-		delete pExprThreadContent;
-		return 0;
-	}
-
-	pExprThreadContent->pExprMethodPtr->MethodPtr(ExprParamecter_);
-	delete pExprThreadContent;
-	return 0;
-}
-
-std::wstring CExpr::MakeTextToUpper(_In_ CONST std::wstring& Text)
-{
-	std::wstring UpperText;
-	for (CONST auto& itm : Text)
-		UpperText.push_back(static_cast<wchar_t>(toupper(itm)));
-
-	return UpperText;
-}
-
-BOOL CExpr::Run(_In_ CONST std::wstring& CmdText) CONST
-{
-	std::wstring Cmd = GetCmd(CmdText);
-	auto itr = std::find_if(VecExprMethodPtr.begin(), VecExprMethodPtr.end(), [Cmd](CONST ExprMethodPtr ExprPtr) { return ExprPtr.CmdText == Cmd; });
-	if (itr == VecExprMethodPtr.end())
-		return FALSE;
-
-	auto pExprThreadContent = new ExprThreadContent;
-	pExprThreadContent->CmdText = CmdText;
-	pExprThreadContent->pExprMethodPtr = &*itr;
-	::CloseHandle(::CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)_WorkThread, pExprThreadContent, NULL, NULL));
-	return TRUE;
-}
-
-VOID CExpr::FindCard(_In_ CONST ExprParamecter& Paramecter) CONST
-{
-	if (Paramecter.size() == 0)
-	{
-		CFormLog::GetInstance().Print(L"Parameter.size=0!");
+		LOG_CF_E(L"Parameter.size=0!");
 		return;
 	}
 
-	CONST std::wstring wsFindType = MakeTextToUpper(Paramecter.at(0));
-	if (wsFindType == L"-ALL")
+	CONST std::wstring wsFindType = CCharacter::MakeTextToUpper(VecParm.at(0));
+	if (wsFindType == L"ALL")
 	{
 		std::vector<CCard> VecCard;
 		CCardExtend::GetInstance().GetALLCard(VecCard);
 		for (CONST auto& itm : VecCard)
-			CFormLog::GetInstance().Print(L"ID=%X,Name=%s,Detail=%s", static_cast<DWORD>(itm.GetCardID()), itm.GetCardName().c_str(), itm.GetCardDetail().c_str());
+			LOG_CF_D(L"ID=%X,Name=%s,Detail=%s", static_cast<DWORD>(itm.GetCardID()), itm.GetCardName().c_str(), itm.GetCardDetail().c_str());
 	}
-	else if (wsFindType == L"-CARD")
+	if (wsFindType == L"GROUP")
 	{
-		if (Paramecter.size() == 1)
+		std::vector<CCard> VecCard;
+		CCardExtend::GetInstance().GetCurrentCardGroup(VecCard);
+		LOG_CF_D(L"GroupSize=%d", static_cast<DWORD>(VecCard.size()));
+		for (CONST auto& itm : VecCard)
+			LOG_CF_D(L"ID=%X,Name=%s,Detail=%s", static_cast<DWORD>(itm.GetCardID()), itm.GetCardName().c_str(), itm.GetCardDetail().c_str());
+	}
+	else if (wsFindType == L"CARDNAME")
+	{
+		if (VecParm.size() == 1)
 		{
-			CFormLog::GetInstance().Print(L"Parameter.size=1!");
+			LOG_CF_E(L"Parameter.size=1!");
 			return;
 		}
 
-		CONST std::wstring& wsFindText = Paramecter.at(1);
+		CONST std::wstring& wsFindText = VecParm.at(1);
 
 
 		std::vector<CCard> VecCard;
 		CCardExtend::GetInstance().GetALLCard(VecCard);
 		for (CONST auto& itm : VecCard)
 		{
-			if (itm.GetCardName().find(wsFindText) != -1 || itm.GetCardDetail().find(wsFindText) != -1)
+			if (itm.GetCardName().find(wsFindText) != -1)
 			{
-				CFormLog::GetInstance().Print(L"ID=%X,Name=%s,Detail=%s", static_cast<DWORD>(itm.GetCardID()), itm.GetCardName().c_str(), itm.GetCardDetail().c_str());
+				LOG_CF_D(L"ID=%X,Name=%s,Detail=%s", static_cast<DWORD>(itm.GetCardID()), itm.GetCardName().c_str(), itm.GetCardDetail().c_str());
+			}
+		}
+	}
+	else if (wsFindType == L"CARDID")
+	{
+		if (VecParm.size() == 1)
+		{
+			LOG_CF_E(L"Parameter.size=1!");
+			return;
+		}
+
+		DWORD dwCardId = wcstol(VecParm.at(1).c_str(), nullptr, 16);
+
+
+		std::vector<CCard> VecCard;
+		CCardExtend::GetInstance().GetALLCard(VecCard);
+		for (CONST auto& itm : VecCard)
+		{
+			if (static_cast<DWORD>(itm.GetCardID()) == dwCardId)
+			{
+				LOG_CF_D(L"ID=%X,Name=%s,Detail=%s", static_cast<DWORD>(itm.GetCardID()), itm.GetCardName().c_str(), itm.GetCardDetail().c_str());
 			}
 		}
 	}
 }
 
-VOID CExpr::SetNextCard(_In_ CONST ExprParamecter& Paramecter) CONST
+VOID CExpr::SetDeskCard(_In_ CONST std::vector<std::wstring>& VecParm)
 {
-	if (Paramecter.size() < 2)
+	if (VecParm.size() < 2)
 	{
-		CFormLog::GetInstance().Print(L"Parameter.size<2!");
+		LOG_CF_E(L"Parameter.size<2!");
 		return;
 	}
 
-	CONST std::wstring wsFindType = MakeTextToUpper(Paramecter.at(0));
-	if (wsFindType == L"-CARDID")
+	CONST std::wstring wsFindType = CCharacter::MakeTextToUpper(VecParm.at(0));
+	if (wsFindType == L"CARDID")
 	{
-		DWORD dwCardId = static_cast<DWORD>(wcstol(Paramecter.at(1).c_str(), NULL, 16));
-		CCardExtend::GetInstance().SetNextCard(dwCardId);
-	}
-	else if (wsFindType == L"-CARDNAME")
-	{
-		CONST std::wstring& wsCardName = Paramecter.at(1);
-
-		std::vector<CCard> VecCard;
-		CCardExtend::GetInstance().GetALLCard(VecCard);
-		
-		auto itr = std::find_if(VecCard.begin(), VecCard.end(), [wsCardName](CONST CCard& Card) { return Card.GetCardName() == wsCardName; });
-		if (itr == VecCard.end())
-		{
-			CFormLog::GetInstance().Print(L"UnExist Card:%s", wsCardName.c_str());
-			return;
-		}
-
-		DWORD dwCardId = static_cast<DWORD>(itr->GetCardID());
-		CCardExtend::GetInstance().SetNextCard(dwCardId);
+		DWORD dwCardId = static_cast<DWORD>(wcstol(VecParm.at(1).c_str(), NULL, 16));
+		CCardExtend::GetInstance().SetCardToDesk(dwCardId);
 	}
 }
 
-VOID CExpr::SetHookInitialCard(_In_ CONST ExprParamecter& Paramecter) CONST
+VOID CExpr::SetInitialCard(_In_ CONST std::vector<std::wstring>& VecParm)
 {
+	std::vector<DWORD> VecCard;
+	for (CONST auto& itm : VecParm)
+		VecCard.push_back(wcstol(itm.c_str(), nullptr, 16));
 
-}
-
-std::wstring CExpr::GetCmd(_In_ CONST std::wstring& CmdText)
-{
-	auto Index = CmdText.find(L" ");
-	if (Index == -1)
-		return CmdText;
-
-	return CmdText.substr(0, Index);
-}
-
-BOOL CExpr::GetExprParmeter(_In_ CONST std::wstring& CmdText, _Out_ ExprParamecter& ExprParamecter_)
-{
-	// FindCard -CardId 1A5C
-	auto Index = CmdText.find(L" ");
-	if (Index == -1) // Empty Parmacter
-		return TRUE;
-
-	// -CardId 1A5C
-	std::wstring Text = CmdText.substr(Index + 1);
-
-	auto fnTrimText = [&Text]
-	{
-		std::wstringstream Trimer;
-		Trimer << Text;
-		Trimer.clear();
-		Trimer >> Text;
-	};
-
-
-	fnTrimText();
-	while (!Text.empty())
-	{
-		// -CardId 1A5C
-		Index = Text.find(L" ");
-		if (Index == -1)
-		{
-			ExprParamecter_.push_back(Text);
-			return TRUE;
-		}
-
-		ExprParamecter_.push_back(Text.substr(0, Index));
-		Text = Text.substr(Index + 1);
-		fnTrimText();
-	}
-
-	
-	return TRUE;
+	CCardExtend::GetInstance().SetIniazleCard(VecCard);
 }

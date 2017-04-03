@@ -25,8 +25,10 @@ enum em_CardAttribute
 #define CARD_NAME_INDEX_BASE		(DWORD64)0x140F7F220
 #define CURRENT_CARD_GROUP_BASE		(DWORD64)0x14117DD30
 #define CURRENT_CARD_DESK_BASE		(DWORD64)0x14117D580
+#define CURRENT_HAND_CARD_BASE		(DWORD64)0x14117D718
 
 extern inline DWORD64 ReadDWORD64(_In_ DWORD64 dwAddr);
+extern VOID WriteValue(_In_ DWORD64 dwAddr, _In_ DWORD dwValue);
 extern VOID MsgBoxLog(_In_ LPCWSTR pwszFormat,...);
 
 

@@ -23,6 +23,8 @@ public:
 
 	// Set Card To Desk
 	BOOL   SetCardToDesk(_In_ DWORD dwCardId) CONST;
+
+	BOOL   SetIniazleCard(_In_ CONST std::vector<DWORD>& VecCard) CONST;
 private:
 	BOOL   ExistCardInCardGroup(_In_ DWORD dwCardId) CONST;
 };

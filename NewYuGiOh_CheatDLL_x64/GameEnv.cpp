@@ -17,6 +17,17 @@ extern DWORD64 ReadDWORD64(_In_ DWORD64 dwAddr)
 	return NULL;
 }
 
+extern VOID WriteValue(_In_ DWORD64 ulAddr, _In_ DWORD dwValue)
+{
+	auto dwCardValue = ReadDWORD64(ulAddr);
+
+	// remove low Value
+	dwCardValue >>= 0x20;
+	dwCardValue <<= 0x20;
+	dwCardValue += dwValue;
+	*reinterpret_cast<DWORD64*>(ulAddr) = dwCardValue;
+}
+
 VOID MsgBoxLog(_In_ LPCWSTR pwszFormat, ...)
 {
 	va_list		args;

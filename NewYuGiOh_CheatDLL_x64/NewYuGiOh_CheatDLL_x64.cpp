@@ -3,8 +3,9 @@
 
 #include "stdafx.h"
 #include "NewYuGiOh_CheatDLL_x64.h"
-#include "GameDlg.h"
 #include <thread>
+#include <MyTools/Log.h>
+#include "Expr.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -53,22 +54,24 @@ CNewYuGiOh_CheatDLL_x64App::CNewYuGiOh_CheatDLL_x64App()
 
 CNewYuGiOh_CheatDLL_x64App theApp;
 
+/*
 DWORD WINAPI _ShowThread(LPVOID)
 {
-	AFX_MANAGE_STATE(AfxGetStaticModuleState());
-	CGameDlg dlg;
-	dlg.DoModal();
+	//AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	
 	return 0;
-}
+}*/
 // CNewYuGiOh_CheatDLL_x64App initialization
 
 BOOL CNewYuGiOh_CheatDLL_x64App::InitInstance()
 {
 	CWinApp::InitInstance();
-	static HANDLE hThread = NULL;
+	/*static HANDLE hThread = NULL;
 	if (hThread == NULL)
 	{
 		hThread = ::CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)_ShowThread, NULL, NULL, NULL);
-	}
+	}*/
+	CLog::GetInstance().GetLogExpr().SetVecExprFunPtr(CExpr::GetInstance().GetVec());
+	CLog::GetInstance().SetClientName(L"YuGiOh", L"C:\\", TRUE, 20 * 1024 * 1024);
 	return TRUE;
 }
